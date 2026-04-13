@@ -1,65 +1,93 @@
-import Image from "next/image";
+'use client'
+
+import Link from 'next/link'
+import NeoProLogo from './components/NeoProLogo'
+
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+
+      {/* Nav */}
+      <nav style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '20px 40px', borderBottom: '1px solid rgba(148,163,184,0.08)',
+        position: 'relative', zIndex: 1
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <NeoProLogo size={36} />
+          <span style={{ fontSize: '20px', fontWeight: 700 }}>NeoPro</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Link href="/login" className="btn-secondary">Log In</Link>
+          <Link href="/signup" className="btn-primary">Get Started</Link>
+        </div>
+      </nav>
+
+      <main style={{
+        flex: 1, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', padding: '40px 20px',
+        textAlign: 'center', position: 'relative', zIndex: 1
+      }}>
+        <div className="animate-fade-in" style={{ maxWidth: '720px', zIndex: 1 }}>
+          <div className="badge badge-primary" style={{ marginBottom: '24px' }}>
+            ✦ AI-Powered Learning Platform
+          </div>
+          <h1 style={{
+            fontSize: 'clamp(36px, 5vw, 64px)', fontWeight: 800,
+            lineHeight: 1.1, marginBottom: '24px'
+          }}>
+            The Future of{' '}
+            <span className="glow-text">Learning</span>{' '}
+            is Here
+          </h1>
+          <p style={{
+            fontSize: '18px', color: 'var(--color-surface-400)',
+            maxWidth: '560px', margin: '0 auto 40px', lineHeight: 1.7
+          }}>
+            Create courses, upload materials, and let AI generate exams instantly.
+            A complete learning management system for educators and students.
+          </p>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link href="/signup" className="btn-primary" style={{ padding: '14px 32px', fontSize: '16px' }}>
+              Start Teaching →
+            </Link>
+            <Link href="/signup" className="btn-secondary" style={{ padding: '14px 32px', fontSize: '16px' }}>
+              Join as Student
+            </Link>
+          </div>
+        </div>
+
+        {/* Feature cards */}
+        <div className="animate-slide-up" style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+          gap: '20px', maxWidth: '900px', width: '100%',
+          marginTop: '80px', zIndex: 1
+        }}>
+          {[
+            { icon: '📚', title: 'Course Management', desc: 'Create and manage courses with ease' },
+            { icon: '🤖', title: 'AI Exam Generation', desc: 'Generate exams from PDF materials instantly' },
+            { icon: '📊', title: 'Score Tracking', desc: 'Real-time grading and performance analytics' },
+          ].map((feature) => (
+            <div key={feature.title} className="glass-card" style={{ padding: '28px', textAlign: 'left' }}>
+              <div style={{ fontSize: '28px', marginBottom: '12px' }}>{feature.icon}</div>
+              <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>{feature.title}</h3>
+              <p style={{ fontSize: '14px', color: 'var(--color-surface-400)', lineHeight: 1.6 }}>
+                {feature.desc}
+              </p>
+            </div>
+          ))}
         </div>
       </main>
+
+      <footer style={{
+        textAlign: 'center', padding: '24px',
+        borderTop: '1px solid rgba(148,163,184,0.08)',
+        color: 'var(--color-surface-500)', fontSize: '13px',
+        position: 'relative', zIndex: 1
+      }}>
+        © 2026 NeoPro. Built with Next.js & Supabase.
+      </footer>
     </div>
-  );
+  )
 }
