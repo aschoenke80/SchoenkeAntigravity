@@ -109,3 +109,48 @@ export async function logout() {
   await deleteSession()
   redirect('/login')
 }
+
+export type ResetPasswordState = {
+  errors?: { email?: string[]; student_id_number?: string[]; password?: string[] }
+  message?: string
+  success?: boolean
+}
+
+export async function resetPassword(state: ResetPasswordState, formData: FormData): Promise<ResetPasswordState> {
+  const email = (formData.get('email') as string)?.trim()
+  const studentId = (formData.get('student_id_number') as string)?.trim()
+  const newPassword = formData.get('password') as string
+
+  if (!email) return { errors: { email: ['Email is required.'] } }
+  if (!studentId) return { errors: { student_id_number: ['Student/Staff ID is required.'] } }
+  if (!newPassword || newPassword.length < 8) return { errors: { password: ['Password must be at least 8 characters.'] } }
+  if (!/[a-zA-Z]/.test(newPassword)) return { errors: { password: ['Must contain at least one letter.'] } }
+  if (!/[0-9]/.test(newPassword)) return { errors: { password: ['Must contain at least one number.'] } }
+
+  const { data: user, error } = await supabaseAdmin
+    .from('users')
+    .select('id, student_id_number')
+    .eq('email', email)
+    .single()
+
+  if (error || !user) {
+    return { message: 'No account found with that email.' }
+  }
+
+  if (!user.student_id_number || user.student_id_number !== studentId) {
+    return { message: 'Student/Staff ID does not match our records.' }
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+  const { error: updateError } = await supabaseAdmin
+    .from('users')
+    .update({ password_hash: hashedPassword })
+    .eq('id', user.id)
+
+  if (updateError) {
+    return { message: 'Failed to reset password. Please try again.' }
+  }
+
+  return { success: true, message: 'Password reset successfully! You can now log in.' }
+}
