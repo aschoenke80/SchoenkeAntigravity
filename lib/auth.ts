@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import type { UserRole } from '@/lib/database.types'
 
-const secretKey = process.env.SESSION_SECRET
+const secretKey = process.env.SESSION_SECRET || 'fallback-dev-secret-change-in-production'
 const encodedKey = new TextEncoder().encode(secretKey)
 
 export interface SessionPayload {
