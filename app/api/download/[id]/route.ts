@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { supabaseAdmin } from '@/lib/supabase'
-import { readFile } from 'fs/promises'
-import path from 'path'
 
 export async function GET(
   request: NextRequest,
@@ -52,23 +50,32 @@ export async function GET(
   }
   // admins can download anything
 
-  // Read the file from disk
-  const filePath = path.join(process.cwd(), 'uploads', material.file_url)
-
+  // Download file from Supabase Storage
   try {
-    const fileBuffer = await readFile(filePath)
+    const { data: fileData, error: downloadError } = await supabaseAdmin.storage
+      .from('course-materials')
+      .download(material.file_url)
 
-    return new NextResponse(fileBuffer, {
+    if (downloadError || !fileData) {
+      return NextResponse.json(
+        { error: 'File not found in storage. It may have been uploaded before cloud storage was enabled.' },
+        { status: 404 }
+      )
+    }
+
+    const arrayBuffer = await fileData.arrayBuffer()
+
+    return new NextResponse(arrayBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${material.file_name}"`,
-        'Content-Length': String(fileBuffer.length),
+        'Content-Length': String(arrayBuffer.byteLength),
       },
     })
   } catch {
     return NextResponse.json(
-      { error: 'File not found on server. It may have been uploaded before downloads were enabled.' },
-      { status: 404 }
+      { error: 'Failed to download file.' },
+      { status: 500 }
     )
   }
 }

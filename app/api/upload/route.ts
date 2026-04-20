@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getSession } from '@/lib/session'
 import { extractText } from 'unpdf'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 
 export async function POST(request: NextRequest) {
   const session = await getSession()
@@ -35,10 +33,18 @@ export async function POST(request: NextRequest) {
     // Store the extracted text and file metadata in the database
     const fileName = `${Date.now()}-${file.name}`
 
-    // Save PDF to disk for downloads
-    const uploadsDir = path.join(process.cwd(), 'uploads')
-    await mkdir(uploadsDir, { recursive: true })
-    await writeFile(path.join(uploadsDir, fileName), buffer)
+    // Upload PDF to Supabase Storage
+    const { error: storageError } = await supabaseAdmin.storage
+      .from('course-materials')
+      .upload(fileName, buffer, {
+        contentType: 'application/pdf',
+        upsert: false,
+      })
+
+    if (storageError) {
+      console.error('Storage error:', storageError)
+      // Non-fatal: continue even if storage upload fails (text is still extracted)
+    }
 
     const { data, error } = await supabaseAdmin
       .from('course_materials')
