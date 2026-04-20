@@ -198,3 +198,73 @@ export async function toggleLike(discussionId: string | null, replyId: string | 
   revalidatePath(`/dashboard/student/courses/${courseId}/discussions`)
   return { success: true }
 }
+
+export async function updateDiscussion(discussionId: string, formData: FormData) {
+  const session = await requireAuth(['student', 'instructor', 'admin'])
+
+  const title = formData.get('title') as string
+  const content = formData.get('content') as string
+
+  if (!title?.trim() || !content?.trim()) {
+    return { error: 'Title and content are required.' }
+  }
+
+  // Verify ownership: only the author or an instructor of the course can edit
+  const { data: discussion } = await supabaseAdmin
+    .from('discussions')
+    .select('user_id, course_id, courses(instructor_id)')
+    .eq('id', discussionId)
+    .single()
+
+  if (!discussion) return { error: 'Discussion not found.' }
+
+  const isAuthor = discussion.user_id === session.userId
+  const isCourseInstructor = (discussion.courses as any)?.instructor_id === session.userId
+  const isAdmin = session.role === 'admin'
+
+  if (!isAuthor && !isCourseInstructor && !isAdmin) {
+    return { error: 'You do not have permission to edit this discussion.' }
+  }
+
+  const { error } = await supabaseAdmin
+    .from('discussions')
+    .update({ title: title.trim(), content: content.trim(), updated_at: new Date().toISOString() })
+    .eq('id', discussionId)
+
+  if (error) return { error: 'Failed to update discussion.' }
+
+  revalidatePath('/dashboard/student/discussions')
+  revalidatePath('/dashboard/instructor/discussions')
+  return { success: true }
+}
+
+export async function deleteDiscussion(discussionId: string) {
+  const session = await requireAuth(['student', 'instructor', 'admin'])
+
+  const { data: discussion } = await supabaseAdmin
+    .from('discussions')
+    .select('user_id, course_id, courses(instructor_id)')
+    .eq('id', discussionId)
+    .single()
+
+  if (!discussion) return { error: 'Discussion not found.' }
+
+  const isAuthor = discussion.user_id === session.userId
+  const isCourseInstructor = (discussion.courses as any)?.instructor_id === session.userId
+  const isAdmin = session.role === 'admin'
+
+  if (!isAuthor && !isCourseInstructor && !isAdmin) {
+    return { error: 'You do not have permission to delete this discussion.' }
+  }
+
+  const { error } = await supabaseAdmin
+    .from('discussions')
+    .delete()
+    .eq('id', discussionId)
+
+  if (error) return { error: 'Failed to delete discussion.' }
+
+  revalidatePath('/dashboard/student/discussions')
+  revalidatePath('/dashboard/instructor/discussions')
+  return { success: true }
+}

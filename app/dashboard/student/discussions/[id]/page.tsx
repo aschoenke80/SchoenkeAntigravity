@@ -72,6 +72,8 @@ export default async function DiscussionDetailPage({ params }: { params: Promise
         }}
         replies={formattedReplies}
         currentUserId={session.userId}
+        canEdit={discussion.user_id === session.userId}
+        backHref="/dashboard/student/discussions"
       />
     </div>
   )

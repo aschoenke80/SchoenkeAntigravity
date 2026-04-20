@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createReply, toggleLike } from '@/app/actions/discussions'
-import { Heart, MessageSquare, Send } from 'lucide-react'
+import { createReply, toggleLike, updateDiscussion, deleteDiscussion } from '@/app/actions/discussions'
+import { Heart, MessageSquare, Send, Pencil, Trash2, X, Check } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface Reply {
   id: string
@@ -28,12 +29,19 @@ interface DiscussionThreadProps {
   }
   replies: Reply[]
   currentUserId: string
+  canEdit?: boolean
+  backHref?: string
 }
 
-export default function DiscussionThreadClient({ discussion, replies: initialReplies, currentUserId }: DiscussionThreadProps) {
+export default function DiscussionThreadClient({ discussion, replies: initialReplies, currentUserId, canEdit = false, backHref }: DiscussionThreadProps) {
   const [replies, setReplies] = useState(initialReplies)
   const [replyContent, setReplyContent] = useState('')
   const [isPending, startTransition] = useTransition()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(discussion.title)
+  const [editContent, setEditContent] = useState(discussion.content)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const router = useRouter()
 
   const roleBadge = (role: string) => {
     const isInstructor = role === 'instructor'
@@ -50,6 +58,29 @@ export default function DiscussionThreadClient({ discussion, replies: initialRep
         {role}
       </span>
     )
+  }
+
+  function handleEdit() {
+    if (!editTitle.trim() || !editContent.trim()) return
+    const formData = new FormData()
+    formData.set('title', editTitle)
+    formData.set('content', editContent)
+    startTransition(async () => {
+      const result = await updateDiscussion(discussion.id, formData)
+      if (!result.error) {
+        setIsEditing(false)
+        router.refresh()
+      }
+    })
+  }
+
+  function handleDelete() {
+    startTransition(async () => {
+      const result = await deleteDiscussion(discussion.id)
+      if (!result.error && backHref) {
+        router.push(backHref)
+      }
+    })
   }
 
   function handleReply() {
@@ -90,17 +121,73 @@ export default function DiscussionThreadClient({ discussion, replies: initialRep
     <div className="animate-fade-in" style={{ maxWidth: '800px' }}>
       {/* Discussion post */}
       <div className="glass-card" style={{ padding: '24px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px' }}>
-          {discussion.is_pinned && <span style={{ fontSize: '14px' }}>📌</span>}
-          <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
-            {discussion.course_title}
-          </span>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '12px', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {discussion.is_pinned && <span style={{ fontSize: '14px' }}>📌</span>}
+            <span className="badge" style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+              {discussion.course_title}
+            </span>
+          </div>
+          {canEdit && !isEditing && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setIsEditing(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-surface-400)' }} title="Edit">
+                <Pencil size={16} />
+              </button>
+              <button onClick={() => setShowDeleteConfirm(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Delete">
+                <Trash2 size={16} />
+              </button>
+            </div>
+          )}
         </div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>{discussion.title}</h1>
-        <p style={{ color: 'var(--color-surface-300)', lineHeight: 1.7, marginBottom: '16px', whiteSpace: 'pre-wrap' }}>
-          {discussion.content}
-        </p>
-        <div style={{ fontSize: '12px', color: 'var(--color-surface-500)', display: 'flex', gap: '16px', alignItems: 'center' }}>
+
+        {showDeleteConfirm && (
+          <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', padding: '12px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: '#ef4444' }}>Delete this discussion?</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={handleDelete} disabled={isPending} className="btn-primary" style={{ background: '#ef4444', fontSize: '12px', padding: '4px 12px' }}>
+                {isPending ? 'Deleting...' : 'Yes, delete'}
+              </button>
+              <button onClick={() => setShowDeleteConfirm(false)} style={{ background: 'none', border: '1px solid var(--color-surface-600)', borderRadius: '6px', cursor: 'pointer', color: 'var(--color-surface-400)', fontSize: '12px', padding: '4px 12px' }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isEditing ? (
+          <>
+            <input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="input-field"
+              style={{ marginBottom: '8px', fontSize: '18px', fontWeight: 700 }}
+            />
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="input-field"
+              rows={4}
+              style={{ resize: 'vertical', marginBottom: '12px' }}
+            />
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={handleEdit} disabled={isPending} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                <Check size={14} /> {isPending ? 'Saving...' : 'Save'}
+              </button>
+              <button onClick={() => { setIsEditing(false); setEditTitle(discussion.title); setEditContent(discussion.content) }} style={{ background: 'none', border: '1px solid var(--color-surface-600)', borderRadius: '6px', cursor: 'pointer', color: 'var(--color-surface-400)', padding: '6px 12px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <X size={14} /> Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '12px' }}>{discussion.title}</h1>
+            <p style={{ color: 'var(--color-surface-300)', lineHeight: 1.7, marginBottom: '16px', whiteSpace: 'pre-wrap' }}>
+              {discussion.content}
+            </p>
+          </>
+        )}
+
+        <div style={{ fontSize: '12px', color: 'var(--color-surface-500)', display: 'flex', gap: '16px', alignItems: 'center', marginTop: isEditing ? '12px' : '0' }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             by {discussion.user_name} {roleBadge(discussion.user_role)}
           </span>

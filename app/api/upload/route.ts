@@ -26,10 +26,11 @@ export async function POST(request: NextRequest) {
 
     // Read file buffer
     const bytes = await file.arrayBuffer()
-    const uint8Array = new Uint8Array(bytes)
+    const buffer = Buffer.from(bytes)
 
     // Extract text from PDF using unpdf (server-safe wrapper around pdfjs)
-    const { text: extractedText } = await extractText(uint8Array, { mergePages: true })
+    const pdfCopy = new Uint8Array(buffer)
+    const { text: extractedText } = await extractText(pdfCopy, { mergePages: true })
 
     // Store the extracted text and file metadata in the database
     const fileName = `${Date.now()}-${file.name}`
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Save PDF to disk for downloads
     const uploadsDir = path.join(process.cwd(), 'uploads')
     await mkdir(uploadsDir, { recursive: true })
-    await writeFile(path.join(uploadsDir, fileName), uint8Array)
+    await writeFile(path.join(uploadsDir, fileName), buffer)
 
     const { data, error } = await supabaseAdmin
       .from('course_materials')
