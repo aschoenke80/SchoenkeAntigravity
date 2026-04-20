@@ -1,12 +1,12 @@
 'use client'
 
 import { useActionState } from 'react'
-import { resetPassword } from '@/app/actions/auth'
+import { resetPassword, type ResetPasswordState } from '@/app/actions/auth'
 import Link from 'next/link'
 import NeoProLogo from '@/app/components/NeoProLogo'
 
 export default function ForgotPasswordPage() {
-  const [state, action, pending] = useActionState(resetPassword, undefined)
+  const [state, action, pending] = useActionState(resetPassword, {} as ResetPasswordState)
 
   return (
     <div style={{
